@@ -1,0 +1,7 @@
+{
+  "_comment": "Listen buttons on the teaser page. Key = button label as it appears on the page. Value = URL to link to, or null to remove the button. Applied by: node tools/patch-signup.js index.html <ENDPOINT> --links tools/links.json",
+  "Apple Podcasts": "https://podcasts.apple.com/podcast/TODO-apple-id",
+  "Spotify": "https://open.spotify.com/show/5kxu4uluMq6jUuoNPGyZMu",
+  "YouTube": "https://www.youtube.com/@machinegodspod",
+  "Amazon Music": null
+}

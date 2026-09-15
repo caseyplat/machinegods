@@ -3,13 +3,16 @@
  * Wires the Machine Gods teaser-site signup widget to a collector endpoint.
  *
  *   node patch-signup.js <path/to/index.html> <ENDPOINT_URL> [--out out.html]
+ *                        [--photo assets/hosts.jpg] [--links tools/links.json]
  *
  * index.html is a Claude Design export: the page template lives as a JSON string
  * inside <script type="__bundler/template">. This script pulls that string out,
  * edits the signup form template + its logic, and writes it back with the same
  * escaping the exporter uses (so the file round-trips byte-for-byte otherwise).
  *
- * Re-running on an already-patched file just updates the endpoint URL.
+ * Re-running on an already-patched file just updates the endpoint URL (and the
+ * listen links / photo, if those flags are passed). Every step is idempotent, so
+ * the same command works on a fresh export and on an already-patched file.
  */
 const fs = require('fs');
 
@@ -94,7 +97,8 @@ tpl = tpl.slice(0, ls + LOGIC_START.length) + newLogic + tpl.slice(le);
 
 // ---------------------------------------------------------------- template
 // 1. Button: label reflects busy state, disabled while sending.
-const oldButton = /<button type="submit" (style="[^"]*") (style-hover="[^"]*")>(?:Subscribe|\{\{ buttonLabel \}\})<\/button>/;
+// Matches both a fresh export and an already-patched page (which has the disabled attr).
+const oldButton = /<button type="submit" (?:disabled="\{\{ busy \}\}" )?(style="[^"]*") (style-hover="[^"]*")>(?:Subscribe|\{\{ buttonLabel \}\})<\/button>/;
 if (!oldButton.test(tpl)) throw new Error('Could not find the Subscribe button');
 tpl = tpl.replace(oldButton, (m, style, hover) =>
   `<button type="submit" disabled="{{ busy }}" ${style} ${hover}>{{ buttonLabel }}</button>`);
@@ -132,6 +136,41 @@ if (photoIdx !== -1) {
   tpl = tpl.slice(0, at) + photoTag + tpl.slice(at);
   // Name order under the photo should match left-to-right in the frame (Casey, then Kevin).
   tpl = tpl.replace('>with Kevin Roose and Casey Newton<', '>with Casey Newton and Kevin Roose<');
+}
+
+// ---------------------------------------------------------------- listen links (optional)
+// --links tools/links.json  → sets the href of each button in the "Listen" nav by its
+// label, or removes the button when the value is null. Keys starting with "_" are
+// ignored (comments). Idempotent. Warns about any button still pointing at a TODO URL,
+// since a fresh export ships with placeholder links.
+const linksIdx = rest.indexOf('--links');
+if (linksIdx !== -1) {
+  const linksFile = rest[linksIdx + 1];
+  if (!linksFile) throw new Error('--links needs a path, e.g. --links tools/links.json');
+  const links = JSON.parse(fs.readFileSync(linksFile, 'utf8'));
+  const navStart = tpl.indexOf('<nav aria-label="Listen"');
+  const navEnd = tpl.indexOf('</nav>', navStart);
+  if (navStart === -1 || navEnd === -1) throw new Error('Could not find the <nav aria-label="Listen"> block');
+  let nav = tpl.slice(navStart, navEnd);
+  const esc = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (const [label, url] of Object.entries(links)) {
+    if (label.startsWith('_')) continue;
+    // Anchor + its trailing newline, so removing one leaves no blank line behind.
+    const re = new RegExp(`(<a href=")[^"]*("(?: [^>]*)?>${esc(label)}</a>)\\n?`);
+    if (!re.test(nav)) {
+      // A null entry whose button is already gone is the desired end state; stay quiet.
+      if (url !== null) console.warn(`links: no "${label}" button found in the Listen nav — skipped`);
+      continue;
+    }
+    nav = url === null
+      ? nav.replace(re, '')
+      : nav.replace(re, (m, pre, post) => `${pre}${url}${post}\n`);
+  }
+  tpl = tpl.slice(0, navStart) + nav + tpl.slice(navEnd);
+  // Anything left on a placeholder URL after applying links.json.
+  for (const m of nav.matchAll(/<a href="([^"]*TODO[^"]*)"[^>]*>([^<]*)<\/a>/g)) {
+    console.warn(`links: "${m[2]}" still points at a placeholder URL: ${m[1]}`);
+  }
 }
 
 // ---------------------------------------------------------------- write back
