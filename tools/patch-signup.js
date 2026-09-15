@@ -112,6 +112,28 @@ if (!tpl.includes('{{ hasError }}')) {
   tpl = tpl.slice(0, notDoneEnd) + ERROR_BLOCK + tpl.slice(notDoneEnd);
 }
 
+// ---------------------------------------------------------------- hosts photo (optional)
+// --photo assets/hosts.jpg  → inserts a photo of the hosts between the wordmark and
+// the "with Kevin Roose and Casey Newton" line. Idempotent: re-running replaces it.
+const photoIdx = rest.indexOf('--photo');
+if (photoIdx !== -1) {
+  const photoSrc = rest[photoIdx + 1];
+  if (!photoSrc) throw new Error('--photo needs a path, e.g. --photo assets/hosts.jpg');
+  const PHOTO_RE = /\n<img id="mg-hosts-photo"[^>]*>/;
+  const photoTag =
+    `\n<img id="mg-hosts-photo" src="${photoSrc}" alt="Casey Newton and Kevin Roose" width="1600" height="1200" loading="lazy" ` +
+    `style="width:min(560px,86%);height:auto;display:block;margin-top:clamp(28px,5vw,44px);border:1px solid #8A6A2D;border-radius:6px;` +
+    `box-shadow:0 24px 60px rgba(0,0,0,.45);animation:mgRise .9s var(--ease-out) 1.1s both">`;
+  tpl = tpl.replace(PHOTO_RE, '');
+  // Anchor: the wordmark image, which is the element right before the "with ..." line.
+  const wordmark = tpl.match(/<img [^>]*alt="Machine Gods"[^>]*>/);
+  if (!wordmark) throw new Error('Could not find the wordmark <img alt="Machine Gods">');
+  const at = tpl.indexOf(wordmark[0]) + wordmark[0].length;
+  tpl = tpl.slice(0, at) + photoTag + tpl.slice(at);
+  // Name order under the photo should match left-to-right in the frame (Casey, then Kevin).
+  tpl = tpl.replace('>with Kevin Roose and Casey Newton<', '>with Casey Newton and Kevin Roose<');
+}
+
 // ---------------------------------------------------------------- write back
 const reencoded = JSON.stringify(tpl).replace(/<\//g, '<\\u002F');
 const out = src.slice(0, bodyStart) + lead + reencoded + trail + src.slice(e);

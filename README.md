@@ -15,7 +15,7 @@ Add a file named `CNAME` containing just `machinegods.com` (or the subdomain you
 Replace `index.html` with the latest export, then re-apply the signup wiring before committing:
 
 ```
-node tools/patch-signup.js index.html "<APPS_SCRIPT_EXEC_URL>"
+node tools/patch-signup.js index.html "<APPS_SCRIPT_EXEC_URL>" --photo assets/hosts.jpg
 ```
 
 The export ships with a stub submit handler (`/* TODO: POST to your list provider */`), so a fresh export that is pushed without this step will silently drop signups.
