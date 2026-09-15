@@ -12,4 +12,13 @@ Single-file site. Everything (artwork, logos, NPR mark) is inlined in `index.htm
 Add a file named `CNAME` containing just `machinegods.com` (or the subdomain you want), then set the same domain in Settings → Pages and add the DNS records GitHub lists there.
 
 ## Updating
-Replace `index.html` with the latest export and commit.
+Replace `index.html` with the latest export, then re-apply the signup wiring before committing:
+
+```
+node tools/patch-signup.js index.html "<APPS_SCRIPT_EXEC_URL>"
+```
+
+The export ships with a stub submit handler (`/* TODO: POST to your list provider */`), so a fresh export that is pushed without this step will silently drop signups.
+
+## Email signups
+The subscribe box posts to a Google Apps Script web app (`tools/Code.gs`) that appends each address to the "Machine Gods signups" Google Sheet. Setup and export instructions are in the header of that file. `tools/patch-signup.js` wires the widget to the deployed script URL; re-run it with a different URL to point the form at a newsletter platform later.
