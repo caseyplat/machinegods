@@ -81,12 +81,11 @@
 </div>
 
 <script>
-// Questions endpoint: the Google Apps Script web app in tools/Questions.gs, which
-// emails each question to hey@machinegods.fm and logs it to a Google Sheet.
+// Questions endpoint: the Cloudflare Worker in tools/questions-worker.js, which
+// emails each question to hey@machinegods.fm via Resend.
 // Leave it empty and the form falls back to opening the listener's mail app.
-const QUESTIONS_ENDPOINT = "";
+const QUESTIONS_ENDPOINT = "https://machinegods-form.kbroose.workers.dev/";
 const TO_EMAIL = "hey@machinegods.fm";
-const ON_AIR_TEXT = "You can read my question on the show, and use my first name and location.";
 
 const form = document.getElementById("ask");
 const alertEl = document.getElementById("alert");
@@ -106,11 +105,7 @@ form.addEventListener("submit", async e => {
     email: v("email"),
     question: v("question"),
     onAir: form.elements.onAir.checked,
-    onAirText: ON_AIR_TEXT,
     website: form.elements.website.value,
-    source: location.href,
-    referrer: document.referrer || "",
-    userAgent: navigator.userAgent,
   };
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email)) return fail("Please enter a valid email address.", "email");
   if (data.question.length < 10) return fail("Please write out your question.", "question");
@@ -129,9 +124,7 @@ form.addEventListener("submit", async e => {
   try {
     const res = await fetch(QUESTIONS_ENDPOINT, {
       method: "POST",
-      // text/plain keeps this a "simple" request: no CORS preflight, which
-      // Apps Script web apps can't answer.
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     const out = await res.json().catch(() => ({}));
@@ -140,9 +133,7 @@ form.addEventListener("submit", async e => {
     document.getElementById("done").hidden = false;
   } catch (err) {
     console.error("[ask] failed:", err);
-    fail(err.message === "rate_limited"
-      ? "You've sent a few questions in a row. Please try again in a little while."
-      : "Something went wrong. Please try again, or email " + TO_EMAIL + ".");
+    fail("Something went wrong. Please try again, or email " + TO_EMAIL + ".");
   } finally {
     button.disabled = false;
     button.textContent = "Send question";

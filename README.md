@@ -49,4 +49,4 @@ The subscribe box posts to a Google Apps Script web app (`tools/Code.gs`) that a
 The page lives at `/transcripts/<episode>/`. Styles are shared with `/ask` in `assets/site.css`; brand images extracted from the export live in `assets/brand/`.
 
 ## Listener questions
-`/ask/` posts to a Google Apps Script web app (`tools/Questions.gs`). It emails each question to hey@machinegods.fm with Reply-To set to the listener, and it logs the question to a Google Sheet. Setup steps are in the header of that file. Paste the deployed `/exec` URL into `QUESTIONS_ENDPOINT` in `ask/index.html`. Until then, the form opens the listener's mail app with the question pre-filled, addressed to hey@machinegods.fm.
+`/ask/` posts to a Cloudflare Worker, `tools/questions-worker.js` (same setup as the kevinroose.com contact form). The worker emails each question to hey@machinegods.fm through Resend, with Reply-To set to the listener. It runs in Kevin's Cloudflare account as `machinegods-form` at https://machinegods-form.kbroose.workers.dev/. To change it, paste the updated file into the dashboard editor and redeploy. Deploy steps are in the file header.
