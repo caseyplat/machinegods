@@ -43,7 +43,8 @@ The subscribe box posts to a Google Apps Script web app (`tools/Code.gs`) that a
    apple: https://podcasts.apple.com/...   (optional; also spotify, youtube, npr)
    ---
    ```
-4. `node tools/build-transcripts.js`, then commit `transcripts/` and `sitemap.xml`.
+4. Optional: save square episode art as `assets/episodes/ep-NN.jpg` (~1400px; the NPR feed has it) and add `image: /assets/episodes/ep-NN.jpg`.
+5. `node tools/build-transcripts.js`, then commit `transcripts/`, `assets/episodes/` and `sitemap.xml`.
 
 The page lives at `/transcripts/<episode>/`. Styles are shared with `/ask` in `assets/site.css`; brand images extracted from the export live in `assets/brand/`.
 
