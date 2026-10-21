@@ -185,10 +185,10 @@ ${eps.map(({ meta }) => `      <li><a href="/transcripts/${esc(meta.slug)}/">
         <span class="mg-ep-meta">${fmtDate(meta.date)}</span>
       </a></li>`).join('\n')}
     </ol>`
-    : `    <p class="mg-empty">The first transcript will be posted here shortly after Episode 1 airs.</p>`;
+    : `    <p class="mg-empty">The first transcript will be posted here the day Episode 1 comes out.</p>`;
   const body = `    <p class="mg-kicker">Read along</p>
     <h1 class="mg-title">Transcripts</h1>
-    <p class="mg-lede">Full transcripts of every episode of Machine Gods, usually posted within a day or two of release.</p>
+    <p class="mg-lede">Full transcripts of every episode of Machine Gods, posted the same day each episode comes out.</p>
 ${list}`;
   return page({
     title: 'Transcripts — Machine Gods',
