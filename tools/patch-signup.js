@@ -91,19 +91,26 @@ class Component extends DCLogic {
 tpl = tpl.slice(0, ls + LOGIC_START.length) + newLogic + tpl.slice(le);
 
 // ---------------------------------------------------------------- template
+// Steps 1–2 touch the export's own signup form. The newsletter step further down
+// replaces that form with a beehiiv popup button, so on an already-patched page
+// there's no form left and these two steps are skipped.
+const hasSignupForm = tpl.includes('<form sc-camel-on-submit="{{ submit }}"');
+
 // 1. Button: label reflects busy state, disabled while sending.
 // Matches both a fresh export and an already-patched page (which has the disabled attr).
 const oldButton = /<button type="submit" (?:disabled="\{\{ busy \}\}" )?(style="[^"]*") (style-hover="[^"]*")>(?:Subscribe|\{\{ buttonLabel \}\})<\/button>/;
-if (!oldButton.test(tpl)) throw new Error('Could not find the Subscribe button');
-tpl = tpl.replace(oldButton, (m, style, hover) =>
-  `<button type="submit" disabled="{{ busy }}" ${style} ${hover}>{{ buttonLabel }}</button>`);
+if (hasSignupForm) {
+  if (!oldButton.test(tpl)) throw new Error('Could not find the Subscribe button');
+  tpl = tpl.replace(oldButton, (m, style, hover) =>
+    `<button type="submit" disabled="{{ busy }}" ${style} ${hover}>{{ buttonLabel }}</button>`);
+}
 
 // 2. Error line under the input (only when hasError). Idempotent.
 const ERROR_BLOCK =
   `<sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">\n` +
   `<div role="alert" style="font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;color:#F9CE6D;text-align:center">{{ error }}</div>\n` +
   `</sc-if>\n`;
-if (!tpl.includes('{{ hasError }}')) {
+if (hasSignupForm && !tpl.includes('{{ hasError }}')) {
   // Insert just before the closing </sc-if> of the notDone block.
   const notDoneStart = tpl.indexOf('<sc-if value="{{ notDone }}"');
   const notDoneEnd = tpl.indexOf('</sc-if>', notDoneStart);
@@ -168,6 +175,30 @@ if (linksIdx !== -1) {
   }
 }
 
+// ---------------------------------------------------------------- newsletter (beehiiv)
+// Always applied. Replaces the export's email form (which posted to the Google Sheet)
+// with a button that opens the beehiiv signup popup in assets/newsletter.js, and loads
+// that script. Idempotent: re-running replaces the block and leaves one script tag.
+const NEWSLETTER_RE = /<div id="mg-newsletter"[\s\S]*?<!--\/mg-newsletter-->/;
+const newsletterBlock =
+  `<div id="mg-newsletter" style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:56px">\n` +
+  `<span style="font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B7B6C1">Get the Machine Gods newsletter</span>\n` +
+  `<button type="button" data-newsletter="" style="height:48px;padding:0 26px;background:#F9CE6D;color:#0D0707;border:1px solid #F9CE6D;border-radius:6px;font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#F6F3F3;border-color:#F6F3F3">Subscribe</button>\n` +
+  `</div><!--/mg-newsletter-->`;
+if (NEWSLETTER_RE.test(tpl)) {
+  tpl = tpl.replace(NEWSLETTER_RE, newsletterBlock);
+} else {
+  const FORM_RE = /<form sc-camel-on-submit="\{\{ submit \}\}"[\s\S]*?<\/form>/;
+  if (!FORM_RE.test(tpl)) throw new Error('Could not find the signup <form> to replace with the newsletter button');
+  tpl = tpl.replace(FORM_RE, newsletterBlock);
+}
+const NEWSLETTER_SCRIPT = '<script src="assets/newsletter.js"></script>';
+if (!tpl.includes(NEWSLETTER_SCRIPT)) {
+  const bodyEnd = tpl.lastIndexOf('</body>');
+  if (bodyEnd === -1) throw new Error('Could not find </body> to load the newsletter script');
+  tpl = tpl.slice(0, bodyEnd) + NEWSLETTER_SCRIPT + '\n' + tpl.slice(bodyEnd);
+}
+
 // ---------------------------------------------------------------- transcripts + questions links
 // Always applied. Adds a "Read the transcripts / Ask a question" row above the bottom
 // divider and the same links in the footer, pointing at the plain-HTML pages in
@@ -182,9 +213,9 @@ const siteLinks =
   `<a href="/transcripts/" style="${pillStyle.replace('color:#0D0707;background:#F9CE6D', 'color:#F9CE6D;background:transparent').replace('border:1px solid #F9CE6D', 'border:1px solid #8A6A2D')}" style-hover="border-color:#F9CE6D;color:#F6F3F3">Read the transcripts</a>\n` +
   `</nav>`;
 tpl = tpl.replace(SITE_LINKS_RE, '');
-const formEnd = tpl.indexOf('</form>');
-if (formEnd === -1) throw new Error('Could not find the signup </form> to anchor the site links after');
-tpl = tpl.slice(0, formEnd + '</form>'.length) + siteLinks + tpl.slice(formEnd + '</form>'.length);
+const NL_END = '<!--/mg-newsletter-->';
+const nlEnd = tpl.indexOf(NL_END);
+tpl = tpl.slice(0, nlEnd + NL_END.length) + siteLinks + tpl.slice(nlEnd + NL_END.length);
 
 const FOOTER_RE = /(<footer [^>]*>)[\s\S]*?(<\/footer>)/;
 if (!FOOTER_RE.test(tpl)) throw new Error('Could not find the <footer>');
@@ -193,6 +224,7 @@ tpl = tpl.replace(FOOTER_RE, (m, open, close) => open + '\n' +
   `<span style="color:#B7B6C1;font-size:11px">© 2026 Machine Gods</span>\n` +
   `<a href="/transcripts/" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Transcripts</a>\n` +
   `<a href="/ask/" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Ask a question</a>\n` +
+  `<a href="#newsletter" data-newsletter="" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Newsletter</a>\n` +
   `<a href="mailto:hey@machinegods.fm" style="${footLink};font-size:11px;text-transform:none;letter-spacing:.04em" style-hover="color:#F6F3F3">hey@machinegods.fm</a>` +
   close);
 

@@ -27,6 +27,7 @@
       <a href="/">Listen</a>
       <a href="/transcripts/">Transcripts</a>
       <a href="/ask/" aria-current="page">Ask a question</a>
+      <a href="#newsletter" data-newsletter>Newsletter</a>
     </nav>
   </header>
   <div class="mg-divider" aria-hidden="true"></div>
@@ -77,7 +78,7 @@
   </main>
 
   <div class="mg-divider is-bottom" aria-hidden="true"></div>
-  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
+  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="#newsletter" data-newsletter>Newsletter</a><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
 </div>
 
 <script>
@@ -145,5 +146,6 @@ function fail(msg, field) {
   if (field) form.elements[field].focus();
 }
 </script>
+<script src="../assets/newsletter.js" defer></script>
 </body>
 </html>

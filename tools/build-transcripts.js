@@ -110,6 +110,7 @@ function page({ title, description, canonical, depth, current, body, image }) {
   const up = '../'.repeat(depth);
   const nav = [['/', 'Listen'], ['/transcripts/', 'Transcripts'], ['/ask/', 'Ask a question']]
     .map(([href, label]) => `<a href="${href}"${label === current ? ' aria-current="page"' : ''}>${label}</a>`)
+    .concat('<a href="#newsletter" data-newsletter>Newsletter</a>')
     .join('\n      ');
   return `<!DOCTYPE html>
 <html lang="en">
@@ -131,7 +132,7 @@ function page({ title, description, canonical, depth, current, body, image }) {
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;600&display=swap">
 <link rel="stylesheet" href="${up}assets/site.css">
 </head>
-<body>
+<body data-newsletter-auto>
 <div class="mg-backdrop" aria-hidden="true"></div>
 <div class="mg-wrap">
   <header class="mg-header">
@@ -147,8 +148,9 @@ ${body}
   </main>
 
   <div class="mg-divider is-bottom" aria-hidden="true"></div>
-  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
+  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="#newsletter" data-newsletter>Newsletter</a><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
 </div>
+<script src="${up}assets/newsletter.js" defer></script>
 </body>
 </html>
 `;

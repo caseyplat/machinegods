@@ -25,8 +25,12 @@ The export ships with a stub submit handler (`/* TODO: POST to your list provide
 ## Listen links
 `tools/links.json` maps each button label in the "Follow the show here" row to its URL. Set a value to `null` to remove that button. To change a link (e.g. once the Apple Podcasts ID exists), edit the JSON and re-run the command above — no need to touch `index.html` by hand. The script warns if any button is still on a `TODO` placeholder.
 
-## Email signups
-The subscribe box posts to a Google Apps Script web app (`tools/Code.gs`) that appends each address to the "Machine Gods signups" Google Sheet. Setup and export instructions are in the header of that file. `tools/patch-signup.js` wires the widget to the deployed script URL; re-run it with a different URL to point the form at a newsletter platform later.
+## Newsletter signups
+Signups go to beehiiv (https://machinegods.beehiiv.com). `assets/newsletter.js` is a popup that loads beehiiv's "machinegods.fm modal" subscribe form (beehiiv → Audience → Subscribe forms) in an iframe. Change the form's colors and fields in beehiiv, and the popup's headline and copy in `newsletter.js`.
+
+- It opens from the homepage's Subscribe button, any "Newsletter" link (anything with `data-newsletter` or `href="#newsletter"`), and the shareable link https://machinegods.fm/#newsletter.
+- It also opens on its own, once per visitor, after 15 seconds or halfway down the page, on the homepage and transcript pages (not `/ask`). Closing it keeps it from opening on its own again for 30 days on that browser.
+- The patch script replaces the export's original email box (which posted to the Google Sheet via `tools/Code.gs`) with the Subscribe button. The Sheet no longer receives new signups. The `<APPS_SCRIPT_EXEC_URL>` argument is still required by the script, but nothing uses it now.
 
 ## Transcripts
 `/transcripts/` is plain HTML generated from Markdown, so it's readable without JavaScript and indexable by search engines (unlike the homepage export).

@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;600&display=swap">
 <link rel="stylesheet" href="../assets/site.css">
 </head>
-<body>
+<body data-newsletter-auto>
 <div class="mg-backdrop" aria-hidden="true"></div>
 <div class="mg-wrap">
   <header class="mg-header">
@@ -27,6 +27,7 @@
       <a href="/">Listen</a>
       <a href="/transcripts/" aria-current="page">Transcripts</a>
       <a href="/ask/">Ask a question</a>
+      <a href="#newsletter" data-newsletter>Newsletter</a>
     </nav>
   </header>
   <div class="mg-divider" aria-hidden="true"></div>
@@ -45,7 +46,8 @@
   </main>
 
   <div class="mg-divider is-bottom" aria-hidden="true"></div>
-  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
+  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="#newsletter" data-newsletter>Newsletter</a><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
 </div>
+<script src="../assets/newsletter.js" defer></script>
 </body>
 </html>
