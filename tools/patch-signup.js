@@ -48,16 +48,11 @@ const SIGNUP_ENDPOINT = ${JSON.stringify(endpoint)};
 const CONSENT_TEXT = "Be the first to learn more — Machine Gods teaser site signup";
 
 class Component extends DCLogic {
-  state = { email: "", done: false, busy: false, error: "", now: Date.now() };
-  launch = new Date("2026-10-19T09:00:00-04:00").getTime();
-  componentDidMount() { this.t = setInterval(() => this.setState({ now: Date.now() }), 1000); }
-  componentWillUnmount() { clearInterval(this.t); }
+  state = { email: "", done: false, busy: false, error: "" };
   renderVals() {
-    const { email, done, busy, error, now } = this.state;
-    const ms = Math.max(0, this.launch - now), p = n => String(n).padStart(2, "0");
-    const cd = { d: p(Math.floor(ms / 864e5)), h: p(Math.floor(ms / 36e5) % 24), m: p(Math.floor(ms / 6e4) % 60), s: p(Math.floor(ms / 1e3) % 60) };
+    const { email, done, busy, error } = this.state;
     return {
-      email, done, notDone: !done, busy, error, hasError: !!error, cd,
+      email, done, notDone: !done, busy, error, hasError: !!error,
       buttonLabel: busy ? "Sending…" : "Subscribe",
       onEmail: e => this.setState({ email: e.target.value, error: "" }),
       submit: async e => {
@@ -126,7 +121,7 @@ if (photoIdx !== -1) {
   const PHOTO_RE = /\n<img id="mg-hosts-photo"[^>]*>/;
   const photoTag =
     `\n<img id="mg-hosts-photo" src="${photoSrc}" alt="Casey Newton and Kevin Roose" width="1600" height="1200" loading="lazy" ` +
-    `style="width:min(560px,86%);height:auto;display:block;margin-top:clamp(28px,5vw,44px);border:1px solid #8A6A2D;border-radius:6px;` +
+    `style="width:min(560px,86%);height:auto;aspect-ratio:4/3;object-fit:cover;flex-shrink:0;display:block;margin-top:clamp(28px,5vw,44px);border:1px solid #8A6A2D;border-radius:6px;` +
     `box-shadow:0 24px 60px rgba(0,0,0,.45);animation:mgRise .9s var(--ease-out) 1.1s both">`;
   tpl = tpl.replace(PHOTO_RE, '');
   // Anchor: the wordmark image, which is the element right before the "with ..." line.
@@ -171,6 +166,58 @@ if (linksIdx !== -1) {
   for (const m of nav.matchAll(/<a href="([^"]*TODO[^"]*)"[^>]*>([^<]*)<\/a>/g)) {
     console.warn(`links: "${m[2]}" still points at a placeholder URL: ${m[1]}`);
   }
+}
+
+// ---------------------------------------------------------------- transcripts + questions links
+// Always applied. Adds a "Read the transcripts / Ask a question" row above the bottom
+// divider and the same links in the footer, pointing at the plain-HTML pages in
+// /transcripts and /ask. Idempotent: re-running replaces both blocks.
+const SITE_LINKS_RE = /\n<nav id="mg-site-links"[\s\S]*?<\/nav>/;
+const pillStyle = 'font-family:var(--font-mono);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;' +
+  'color:#0D0707;background:#F9CE6D;border:1px solid #F9CE6D;border-radius:6px;padding:0 22px;min-height:48px;display:inline-flex;align-items:center';
+const pillHover = 'background:#F6F3F3;border-color:#F6F3F3;color:#0D0707';
+const siteLinks =
+  `\n<nav id="mg-site-links" aria-label="More from the show" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:56px">\n` +
+  `<a href="/ask/" style="${pillStyle}" style-hover="${pillHover}">Ask Kevin and Casey a question</a>\n` +
+  `<a href="/transcripts/" style="${pillStyle.replace('color:#0D0707;background:#F9CE6D', 'color:#F9CE6D;background:transparent').replace('border:1px solid #F9CE6D', 'border:1px solid #8A6A2D')}" style-hover="border-color:#F9CE6D;color:#F6F3F3">Read the transcripts</a>\n` +
+  `</nav>`;
+tpl = tpl.replace(SITE_LINKS_RE, '');
+const formEnd = tpl.indexOf('</form>');
+if (formEnd === -1) throw new Error('Could not find the signup </form> to anchor the site links after');
+tpl = tpl.slice(0, formEnd + '</form>'.length) + siteLinks + tpl.slice(formEnd + '</form>'.length);
+
+const FOOTER_RE = /(<footer [^>]*>)[\s\S]*?(<\/footer>)/;
+if (!FOOTER_RE.test(tpl)) throw new Error('Could not find the <footer>');
+const footLink = 'color:#F9CE6D;text-decoration:none';
+tpl = tpl.replace(FOOTER_RE, (m, open, close) => open + '\n' +
+  `<span style="color:#B7B6C1;font-size:11px">© 2026 Machine Gods</span>\n` +
+  `<a href="/transcripts/" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Transcripts</a>\n` +
+  `<a href="/ask/" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Ask a question</a>\n` +
+  `<a href="mailto:hey@machinegods.fm" style="${footLink};font-size:11px;text-transform:none;letter-spacing:.04em" style-hover="color:#F6F3F3">hey@machinegods.fm</a>` +
+  close);
+
+// ---------------------------------------------------------------- metadata + post-launch copy
+// Always applied. The export's share tags point at machinegods.com and an image that
+// isn't in this repo, and several lines still say "the week of October 19".
+const SITE = 'https://machinegods.fm/';
+tpl = tpl
+  .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${SITE}$2`)
+  .replace(/(<meta property="og:image" content=")[^"]*(")/, `$1${SITE}assets/hosts.jpg$2`)
+  .replace(/(<meta name="twitter:image" content=")[^"]*(")/, `$1${SITE}assets/hosts.jpg$2`)
+  .replace(/(<meta property="og:image:width" content=")[^"]*(")/, '$11600$2')
+  .replace(/(<meta property="og:image:height" content=")[^"]*(")/, '$11200$2')
+  .replace(/ Starting the week of October 19\./g, ' New episodes twice a week.')
+  .replace("You're on the list. See you the week of October 19.", "You're on the list.");
+if (!tpl.includes('<link rel="canonical"')) {
+  tpl = tpl.replace('<meta property="og:type"', `<link rel="canonical" href="${SITE}"><meta property="og:type"`);
+}
+
+// --launched → swap the "First episode drops / October 21" countdown block for an
+// evergreen "Twice a week" line. Leave the flag off until Episode 1 is actually out.
+if (rest.includes('--launched')) {
+  tpl = tpl
+    .replace(/(color:#B7B6C1">)First episode drops(<\/span>)/, '$1New episodes$2')
+    .replace(/(color:#F9CE6D;text-align:center">)October 21(<\/span>)/, '$1Twice a week$2');
 }
 
 // ---------------------------------------------------------------- write back

@@ -1,0 +1,246 @@
+#!/usr/bin/env node
+/**
+ * Builds the /transcripts section from Markdown sources.
+ *
+ *   node tools/build-transcripts.js
+ *
+ * Reads every transcripts/src/*.md, writes transcripts/<slug>/index.html for each,
+ * the transcripts/index.html listing, and sitemap.xml at the repo root. Commit the
+ * generated files along with the source; GitHub Pages serves them as-is.
+ *
+ * Source format: the Markdown the Machine Gods transcriber exports (bold speaker
+ * labels, one paragraph per turn), with a front-matter block on top:
+ *
+ *   ---
+ *   episode: 1
+ *   title: The Singularity Will Be Podcasted
+ *   date: 2026-10-21
+ *   description: One or two sentences for the listing and link previews.
+ *   apple: https://podcasts.apple.com/...      (optional, any of these four)
+ *   spotify: https://open.spotify.com/episode/...
+ *   youtube: https://www.youtube.com/watch?v=...
+ *   npr: https://www.npr.org/...
+ *   slug: 1                                    (optional; defaults to the episode number)
+ *   ---
+ *
+ * The transcriber's "Note" / "flagged for review" blockquotes and the trailing
+ * "Review list" section are dropped automatically. The build refuses to publish a
+ * transcript that still contains [[uncertain]] markers: resolve them first.
+ */
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+const SRC = path.join(ROOT, 'transcripts', 'src');
+const OUT = path.join(ROOT, 'transcripts');
+const SITE = 'https://machinegods.fm';
+const DEFAULT_DISCLAIMER =
+  'Machine Gods is made to be heard. This transcript was produced with AI-assisted ' +
+  'speech recognition and reviewed by our team, but it may contain errors. Please ' +
+  'check the audio before quoting.';
+
+const esc = s => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// ---------------------------------------------------------------- parse
+function parseFrontMatter(raw, file) {
+  const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!m) throw new Error(`${file}: missing front matter (--- block with episode/title/date)`);
+  const meta = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^([A-Za-z_]+):\s*(.*)$/);
+    if (kv) meta[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, '');
+  }
+  for (const k of ['episode', 'title', 'date']) {
+    if (!meta[k]) throw new Error(`${file}: front matter needs "${k}"`);
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(meta.date)) throw new Error(`${file}: date must be YYYY-MM-DD`);
+  meta.slug = meta.slug || String(meta.episode);
+  return { meta, body: raw.slice(m[0].length) };
+}
+
+/** Drops transcriber-only scaffolding and fails on anything still needing review. */
+function cleanBody(body, file) {
+  let b = body.replace(/\r\n/g, '\n');
+  const review = b.search(/^(?:---\s*\n+)?##\s*Review list/m);
+  if (review !== -1) b = b.slice(0, review);
+  b = b
+    .split(/\n{2,}/)
+    .filter(block => !/^# /.test(block.trim()))                                    // title comes from front matter
+    .filter(block => !/^>\s*\*\*(Note:|\d+ item\(s\) flagged)/.test(block.trim()))  // transcriber notes
+    .join('\n\n')
+    .trim();
+  const unresolved = [...b.matchAll(/\[\[([^\]]+)\]\]/g)].map(m => m[1]);
+  if (unresolved.length) {
+    throw new Error(`${file}: ${unresolved.length} unresolved [[uncertain]] marker(s), e.g. ` +
+      unresolved.slice(0, 5).map(s => `[[${s}]]`).join(', ') + '. Fix them in the source before publishing.');
+  }
+  return b;
+}
+
+function inline(s) {
+  return esc(s)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/(^|[\s(])_([^_\s][^_]*)_/g, '$1<em>$2</em>');
+}
+
+function markdownToHtml(md) {
+  return md.split(/\n{2,}/).map(block => {
+    const t = block.trim();
+    if (!t) return '';
+    if (/^-{3,}$/.test(t)) return '<hr>';
+    const h = t.match(/^(#{2,6})\s+(.*)$/);
+    if (h) return `<h2>${inline(h[2])}</h2>`;
+    if (t.startsWith('>')) return `<blockquote><p>${inline(t.replace(/^>\s?/gm, '')).replace(/\n/g, '<br>')}</p></blockquote>`;
+    return `<p>${inline(t).replace(/\n/g, '<br>')}</p>`;
+  }).filter(Boolean).join('\n');
+}
+
+const fmtDate = iso => new Date(iso + 'T12:00:00Z')
+  .toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+// ---------------------------------------------------------------- templates
+function page({ title, description, canonical, depth, current, body }) {
+  const up = '../'.repeat(depth);
+  const nav = [['/', 'Listen'], ['/transcripts/', 'Transcripts'], ['/ask/', 'Ask a question']]
+    .map(([href, label]) => `<a href="${href}"${label === current ? ' aria-current="page"' : ''}>${label}</a>`)
+    .join('\n      ');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+<link rel="canonical" href="${canonical}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:url" content="${canonical}">
+<meta property="og:image" content="${SITE}/assets/hosts.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="${up}assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="${up}assets/site.css">
+</head>
+<body>
+<div class="mg-backdrop" aria-hidden="true"></div>
+<div class="mg-wrap">
+  <header class="mg-header">
+    <a class="mg-logo" href="/"><img src="${up}assets/brand/wordmark.svg" alt="Machine Gods" width="148" height="60"></a>
+    <nav class="mg-nav" aria-label="Site">
+      ${nav}
+    </nav>
+  </header>
+  <div class="mg-divider" aria-hidden="true"></div>
+
+  <main>
+${body}
+  </main>
+
+  <div class="mg-divider is-bottom" aria-hidden="true"></div>
+  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
+</div>
+</body>
+</html>
+`;
+}
+
+const LINK_LABELS = [['apple', 'Apple Podcasts'], ['spotify', 'Spotify'], ['youtube', 'YouTube'], ['npr', 'NPR']];
+
+function episodePage(ep) {
+  const { meta } = ep;
+  const links = LINK_LABELS.filter(([k]) => meta[k])
+    .map(([k, label]) => `<a class="mg-pill" href="${esc(meta[k])}" target="_blank" rel="noopener">${label}</a>`)
+    .join('\n      ');
+  const body = `    <p class="mg-kicker">Episode ${esc(meta.episode)} · ${fmtDate(meta.date)} · Transcript</p>
+    <h1 class="mg-title">${esc(meta.title)}</h1>
+${meta.description ? `    <p class="mg-lede">${inline(meta.description)}</p>\n` : ''}${links ? `    <nav class="mg-ep-links" aria-label="Listen to this episode">
+      ${links}
+    </nav>\n` : ''}    <p class="mg-disclaimer">${inline(meta.disclaimer || DEFAULT_DISCLAIMER)}</p>
+    <article class="mg-transcript">
+${ep.html}
+    </article>
+    <p class="mg-fine"><a href="/transcripts/">← All transcripts</a> · Questions for the show? <a href="/ask/">Ask Kevin and Casey</a>.</p>`;
+  return page({
+    title: `Episode ${meta.episode}: ${meta.title} — Machine Gods transcript`,
+    description: meta.description || `Full transcript of Machine Gods episode ${meta.episode}, “${meta.title},” with Kevin Roose and Casey Newton.`,
+    canonical: `${SITE}/transcripts/${meta.slug}/`,
+    depth: 2,
+    current: 'Transcripts',
+    body,
+  });
+}
+
+function indexPage(eps) {
+  const list = eps.length
+    ? `    <ol class="mg-episodes" reversed>
+${eps.map(({ meta }) => `      <li><a href="/transcripts/${esc(meta.slug)}/">
+        <span class="mg-ep-num">${esc(meta.episode)}</span>
+        <span class="mg-ep-title">${esc(meta.title)}</span>
+        <span class="mg-ep-meta">${fmtDate(meta.date)}</span>
+      </a></li>`).join('\n')}
+    </ol>`
+    : `    <p class="mg-empty">The first transcript will be posted here shortly after Episode 1 airs.</p>`;
+  const body = `    <p class="mg-kicker">Read along</p>
+    <h1 class="mg-title">Transcripts</h1>
+    <p class="mg-lede">Full transcripts of every episode of Machine Gods, usually posted within a day or two of release.</p>
+${list}`;
+  return page({
+    title: 'Transcripts — Machine Gods',
+    description: 'Full transcripts of Machine Gods, the podcast with Kevin Roose and Casey Newton.',
+    canonical: `${SITE}/transcripts/`,
+    depth: 1,
+    current: 'Transcripts',
+    body,
+  });
+}
+
+// ---------------------------------------------------------------- build
+try {
+  build();
+} catch (err) {
+  console.error('build-transcripts: ' + err.message);
+  process.exit(1);
+}
+
+function build() {
+  fs.mkdirSync(SRC, { recursive: true });
+  const eps = fs.readdirSync(SRC).filter(f => f.endsWith('.md')).sort().map(f => {
+    const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(SRC, f), 'utf8'), f);
+    return { file: f, meta, html: markdownToHtml(cleanBody(body, f)) };
+  });
+  const seen = new Set();
+  for (const ep of eps) {
+    if (seen.has(ep.meta.slug)) throw new Error(`Two transcripts share the slug "${ep.meta.slug}"`);
+    seen.add(ep.meta.slug);
+  }
+  eps.sort((a, b) => b.meta.date.localeCompare(a.meta.date) || Number(b.meta.episode) - Number(a.meta.episode));
+
+  // Remove pages whose source is gone, so a deleted transcript doesn't linger online.
+  for (const d of fs.readdirSync(OUT, { withFileTypes: true })) {
+    if (d.isDirectory() && d.name !== 'src' && !seen.has(d.name) && fs.existsSync(path.join(OUT, d.name, 'index.html'))) {
+      fs.rmSync(path.join(OUT, d.name), { recursive: true });
+      console.log(`removed transcripts/${d.name}/ (no source)`);
+    }
+  }
+
+  for (const ep of eps) {
+    const dir = path.join(OUT, ep.meta.slug);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'index.html'), episodePage(ep));
+    console.log(`wrote transcripts/${ep.meta.slug}/  (${ep.file})`);
+  }
+  fs.writeFileSync(path.join(OUT, 'index.html'), indexPage(eps));
+  console.log(`wrote transcripts/index.html  (${eps.length} episode${eps.length === 1 ? '' : 's'})`);
+
+  const urls = ['/', '/ask/', '/transcripts/', ...eps.map(e => `/transcripts/${e.meta.slug}/`)];
+  fs.writeFileSync(path.join(ROOT, 'sitemap.xml'),
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.map(u => `  <url><loc>${SITE}${u}</loc></url>`).join('\n') + `\n</urlset>\n`);
+  console.log('wrote sitemap.xml');
+}

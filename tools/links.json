@@ -1,7 +1,10 @@
 {
-  "_comment": "Listen buttons on the teaser page. Key = button label as it appears on the page. Value = URL to link to, or null to remove the button. Applied by: node tools/patch-signup.js index.html <ENDPOINT> --links tools/links.json",
-  "Apple Podcasts": "https://podcasts.apple.com/podcast/TODO-apple-id",
+  "_comment": "Listen buttons on the homepage. Key = button label as it appears on the page. Value = URL to link to, or null to remove the button. Applied by: node tools/patch-signup.js index.html <ENDPOINT> --links tools/links.json",
+  "Apple Podcasts": "https://podcasts.apple.com/podcast/id6812430636",
   "Spotify": "https://open.spotify.com/show/5kxu4uluMq6jUuoNPGyZMu",
   "YouTube": "https://www.youtube.com/@machinegodspod",
+  "Overcast": "overcast://x-callback-url/add?url=https%3A%2F%2Ffeeds.npr.org%2Fg-s1-143588%2Fpodcast.xml",
+  "Pocket Casts": "pktc://subscribe/feeds.npr.org/g-s1-143588/podcast.xml",
+  "RSS": "https://feeds.npr.org/g-s1-143588/podcast.xml",
   "Amazon Music": null
 }

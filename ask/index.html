@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask Machine Gods a question</title>
+<meta name="description" content="Got a question about AI for Kevin Roose and Casey Newton? Send it to Machine Gods and it might end up on the show.">
+<link rel="canonical" href="https://machinegods.fm/ask/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ask Machine Gods a question">
+<meta property="og:description" content="Got a question about AI for Kevin Roose and Casey Newton? Send it in and it might end up on the show.">
+<meta property="og:url" content="https://machinegods.fm/ask/">
+<meta property="og:image" content="https://machinegods.fm/assets/hosts.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;600&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<div class="mg-backdrop" aria-hidden="true"></div>
+<div class="mg-wrap">
+  <header class="mg-header">
+    <a class="mg-logo" href="/"><img src="../assets/brand/wordmark.svg" alt="Machine Gods" width="148" height="60"></a>
+    <nav class="mg-nav" aria-label="Site">
+      <a href="/">Listen</a>
+      <a href="/transcripts/">Transcripts</a>
+      <a href="/ask/" aria-current="page">Ask a question</a>
+    </nav>
+  </header>
+  <div class="mg-divider" aria-hidden="true"></div>
+
+  <main>
+    <p class="mg-kicker">Listener questions</p>
+    <h1 class="mg-title">Ask Kevin and Casey</h1>
+    <p class="mg-lede">Confused about something in AI? Want a second opinion on a chatbot, a job offer, or the end of the world? Send us your question. We read every one, and the best ones end up on the show.</p>
+
+    <form id="ask" class="mg-form" novalidate>
+      <div class="mg-row">
+        <div class="mg-field">
+          <label for="name">Name <span class="mg-opt">(optional)</span></label>
+          <input class="mg-input" id="name" name="name" autocomplete="name" maxlength="120">
+        </div>
+        <div class="mg-field">
+          <label for="location">Where you're writing from <span class="mg-opt">(optional)</span></label>
+          <input class="mg-input" id="location" name="location" autocomplete="address-level2" maxlength="120" placeholder="City, country">
+        </div>
+      </div>
+      <div class="mg-field">
+        <label for="email">Email</label>
+        <input class="mg-input" id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com">
+      </div>
+      <div class="mg-field">
+        <label for="question">Your question</label>
+        <textarea class="mg-textarea" id="question" name="question" required maxlength="3000"></textarea>
+        <div class="mg-count" id="count" aria-live="polite">0 / 3000</div>
+      </div>
+      <label class="mg-check">
+        <input type="checkbox" id="onAir" name="onAir" checked>
+        <span>You can read my question on the show, and use my first name and location.</span>
+      </label>
+      <div class="mg-hp" aria-hidden="true">
+        <label for="website">Leave this empty</label>
+        <input id="website" name="website" tabindex="-1" autocomplete="off">
+      </div>
+      <button class="mg-button" type="submit" id="submit">Send question</button>
+      <p class="mg-alert" id="alert" role="alert"></p>
+    </form>
+
+    <div class="mg-done" id="done" hidden>
+      <h2>Got it. Thank you.</h2>
+      <p>Your question is in the pile. We can't answer everyone, but we read them all. If we use yours, we may email you first.</p>
+    </div>
+
+    <p class="mg-fine">Prefer email? Write to <a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a>. We only use your email address to follow up about your question.</p>
+  </main>
+
+  <div class="mg-divider is-bottom" aria-hidden="true"></div>
+  <footer class="mg-footer"><span>© 2026 Machine Gods</span><a href="mailto:hey@machinegods.fm">hey@machinegods.fm</a></footer>
+</div>
+
+<script>
+// Questions endpoint: the Google Apps Script web app in tools/Questions.gs, which
+// emails each question to hey@machinegods.fm and logs it to a Google Sheet.
+// Leave it empty and the form falls back to opening the listener's mail app.
+const QUESTIONS_ENDPOINT = "";
+const TO_EMAIL = "hey@machinegods.fm";
+const ON_AIR_TEXT = "You can read my question on the show, and use my first name and location.";
+
+const form = document.getElementById("ask");
+const alertEl = document.getElementById("alert");
+const button = document.getElementById("submit");
+const question = document.getElementById("question");
+const count = document.getElementById("count");
+
+question.addEventListener("input", () => { count.textContent = question.value.length + " / 3000"; });
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  if (button.disabled) return;
+  const v = name => form.elements[name].value.trim();
+  const data = {
+    name: v("name"),
+    location: v("location"),
+    email: v("email"),
+    question: v("question"),
+    onAir: form.elements.onAir.checked,
+    onAirText: ON_AIR_TEXT,
+    website: form.elements.website.value,
+    source: location.href,
+    referrer: document.referrer || "",
+    userAgent: navigator.userAgent,
+  };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email)) return fail("Please enter a valid email address.", "email");
+  if (data.question.length < 10) return fail("Please write out your question.", "question");
+  alertEl.textContent = "";
+
+  if (!QUESTIONS_ENDPOINT) {
+    const body = data.question + "\n\n—\n" +
+      [data.name, data.location].filter(Boolean).join(", ") +
+      "\nOK to use on the show: " + (data.onAir ? "yes" : "no");
+    location.href = "mailto:" + TO_EMAIL + "?subject=" + encodeURIComponent("Listener question") + "&body=" + encodeURIComponent(body);
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Sending…";
+  try {
+    const res = await fetch(QUESTIONS_ENDPOINT, {
+      method: "POST",
+      // text/plain keeps this a "simple" request: no CORS preflight, which
+      // Apps Script web apps can't answer.
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(data),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || out.ok === false) throw new Error(out.error || ("http_" + res.status));
+    form.hidden = true;
+    document.getElementById("done").hidden = false;
+  } catch (err) {
+    console.error("[ask] failed:", err);
+    fail(err.message === "rate_limited"
+      ? "You've sent a few questions in a row. Please try again in a little while."
+      : "Something went wrong. Please try again, or email " + TO_EMAIL + ".");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Send question";
+  }
+});
+
+function fail(msg, field) {
+  alertEl.textContent = msg;
+  if (field) form.elements[field].focus();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+/* Machine Gods — shared styles for the plain-HTML pages (/transcripts, /ask).
+   The homepage is a Claude Design export with its own inlined styles; the tokens
+   below are copied from it so the two stay visually in step. Brand rules: Gold
+   on Coffee, Archivo at width 125 for display, Inter for body, IBM Plex Mono for
+   metadata; 1px hairlines, small radii, no gradients. */
+
+:root {
+  --mg-gold: #F9CE6D;
+  --mg-coffee: #1B0F0E;
+  --mg-off-white: #F6F3F3;
+  --mg-slate: #B7B6C1;
+  --mg-warm-black: #0D0707;
+  --mg-gold-dim: #8A6A2D;
+  --mg-line: #3A3A35;
+  --mg-muted: #8A8781;
+
+  --font-display: "Archivo", "Archivo Black", "Arial Black", Impact, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--mg-warm-black); }
+body {
+  margin: 0;
+  background: var(--mg-coffee);
+  color: var(--mg-off-white);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+::selection { background: var(--mg-gold); color: var(--mg-warm-black); }
+a { color: var(--mg-gold); text-decoration: none; }
+a:hover { color: var(--mg-off-white); text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--mg-gold); outline-offset: 2px; }
+
+/* Dithered artwork from the homepage, faded behind the top of the page. */
+.mg-backdrop {
+  position: absolute; inset: 0 0 auto 0; height: 520px; z-index: 0; pointer-events: none;
+  background: url("brand/background.png") center top / cover;
+  -webkit-mask-image: linear-gradient(#000 0%, transparent 100%);
+          mask-image: linear-gradient(#000 0%, transparent 100%);
+  opacity: .22;
+}
+
+.mg-wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 0 20px 64px; }
+
+.mg-header {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 28px 0 0;
+}
+.mg-header .mg-logo img { display: block; height: 60px; width: auto; }
+.mg-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.mg-nav a, .mg-pill {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--mg-gold); border: 1px solid var(--mg-gold-dim); border-radius: 99px;
+  padding: 10px 14px; min-height: 40px; display: inline-flex; align-items: center; white-space: nowrap;
+}
+.mg-nav a:hover, .mg-pill:hover { border-color: var(--mg-gold); color: var(--mg-off-white); text-decoration: none; }
+.mg-nav a[aria-current="page"] { background: var(--mg-gold); border-color: var(--mg-gold); color: var(--mg-warm-black); }
+
+.mg-divider {
+  width: 100%; aspect-ratio: 600 / 36; background: var(--mg-gold); margin: 36px 0 44px;
+  -webkit-mask: url("brand/divider-top.svg") center / contain no-repeat;
+          mask: url("brand/divider-top.svg") center / contain no-repeat;
+}
+.mg-divider.is-bottom {
+  margin: 64px 0 24px;
+  -webkit-mask-image: url("brand/divider-bottom.svg");
+          mask-image: url("brand/divider-bottom.svg");
+}
+
+.mg-kicker {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--mg-slate); margin: 0 0 12px;
+}
+.mg-title {
+  font-family: var(--font-display); font-stretch: 125%; font-weight: 900; text-transform: uppercase;
+  color: var(--mg-gold); font-size: clamp(30px, 6vw, 48px); line-height: 1; letter-spacing: .01em;
+  margin: 0 0 18px; text-wrap: balance;
+}
+.mg-lede { font-size: clamp(16px, 2vw, 19px); color: var(--mg-off-white); margin: 0 0 8px; text-wrap: pretty; }
+.mg-muted { color: var(--mg-muted); }
+
+/* ---------------------------------------------------------------- transcripts index */
+.mg-episodes { list-style: none; margin: 32px 0 0; padding: 0; border-top: 1px solid var(--mg-line); }
+.mg-episodes li { border-bottom: 1px solid var(--mg-line); }
+.mg-episodes a { display: grid; grid-template-columns: 64px 1fr; gap: 4px 16px; padding: 20px 4px; color: var(--mg-off-white); }
+.mg-episodes a:hover { text-decoration: none; background: rgba(249, 206, 109, .05); }
+.mg-episodes a:hover .mg-ep-title { color: var(--mg-gold); }
+.mg-ep-num { grid-row: span 2; font-family: var(--font-display); font-stretch: 125%; font-weight: 900; font-size: 28px; line-height: 1.1; color: var(--mg-gold); }
+.mg-ep-title { font-family: var(--font-display); font-stretch: 125%; font-weight: 700; font-size: 18px; line-height: 1.25; text-transform: uppercase; }
+.mg-ep-meta { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; color: var(--mg-muted); }
+.mg-empty { margin-top: 32px; padding: 24px; border: 1px dashed var(--mg-line); border-radius: 6px; color: var(--mg-muted); font-family: var(--font-mono); font-size: 13px; }
+
+/* ---------------------------------------------------------------- transcript page */
+.mg-ep-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 0; }
+.mg-disclaimer {
+  margin: 28px 0 36px; padding: 14px 16px; border-left: 2px solid var(--mg-gold-dim);
+  background: rgba(13, 7, 7, .5); font-size: 14px; color: var(--mg-slate);
+}
+.mg-transcript h2 {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--mg-gold); margin: 44px 0 16px; padding-top: 20px; border-top: 1px solid var(--mg-line);
+}
+.mg-transcript p { margin: 0 0 1.1em; text-wrap: pretty; }
+.mg-transcript p strong:first-child {
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--mg-gold); margin-right: 4px;
+}
+.mg-transcript blockquote { margin: 0 0 1.1em; padding-left: 16px; border-left: 2px solid var(--mg-line); color: var(--mg-slate); }
+.mg-transcript hr { border: 0; border-top: 1px solid var(--mg-line); margin: 36px 0; }
+
+/* ---------------------------------------------------------------- ask form */
+.mg-form { display: grid; gap: 20px; margin-top: 32px; }
+.mg-field { display: grid; gap: 8px; }
+.mg-field label, .mg-check {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mg-slate);
+}
+.mg-field label .mg-opt { color: var(--mg-muted); letter-spacing: .08em; text-transform: none; }
+.mg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 560px) { .mg-row { grid-template-columns: 1fr; } }
+.mg-input, .mg-textarea {
+  width: 100%; background: rgba(13, 7, 7, .7); border: 1px solid var(--mg-line); border-radius: 6px;
+  color: var(--mg-off-white); font-family: var(--font-body); font-size: 16px; padding: 12px 14px; outline: none;
+}
+.mg-input { height: 48px; }
+.mg-textarea { min-height: 180px; resize: vertical; line-height: 1.55; }
+.mg-input:focus, .mg-textarea:focus { border-color: var(--mg-gold); }
+.mg-count { font-family: var(--font-mono); font-size: 11px; color: var(--mg-muted); text-align: right; }
+.mg-check { display: flex; gap: 10px; align-items: flex-start; text-transform: none; letter-spacing: .02em; font-size: 13px; line-height: 1.5; cursor: pointer; }
+.mg-check input { accent-color: var(--mg-gold); width: 16px; height: 16px; margin: 2px 0 0; flex-shrink: 0; }
+.mg-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.mg-button {
+  justify-self: start; height: 48px; padding: 0 24px; background: var(--mg-gold); color: var(--mg-warm-black);
+  border: 1px solid var(--mg-gold); border-radius: 6px; font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+}
+.mg-button:hover { background: var(--mg-off-white); border-color: var(--mg-off-white); }
+.mg-button[disabled] { opacity: .6; cursor: progress; }
+.mg-alert { font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--mg-gold); min-height: 1em; margin: 0; }
+.mg-done {
+  margin-top: 32px; padding: 22px 20px; border: 1px solid var(--mg-gold-dim); border-radius: 6px;
+  animation: mgFade .3s ease both;
+}
+.mg-done h2 { font-family: var(--font-display); font-stretch: 125%; font-weight: 900; text-transform: uppercase; color: var(--mg-gold); font-size: 22px; margin: 0 0 8px; }
+.mg-done p { margin: 0; }
+.mg-fine { font-size: 13px; color: var(--mg-muted); margin-top: 28px; }
+
+.mg-footer {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 20px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--mg-slate);
+}
+
+@keyframes mgFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
