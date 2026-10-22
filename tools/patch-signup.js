@@ -264,7 +264,6 @@ if (playlistIdx !== -1) {
   if (!playlist || !/^[A-Za-z0-9_-]{10,64}$/.test(playlist)) {
     throw new Error('--playlist needs a YouTube playlist ID, e.g. --playlist PLxxxxxxxxxxxxxxxx (the part after "list=")');
   }
-  if (playlist.length !== 34) console.warn(`warning: playlist ID "${playlist}" is ${playlist.length} characters; YouTube playlist IDs are usually 34. Check it was copied in full.`);
   const src = `https://www.youtube.com/embed/videoseries?list=${playlist}&amp;rel=0`;
   const player =
     `<div id="mg-latest-episode" style="width:min(720px,calc(100vw - 32px));aspect-ratio:16/9;margin-top:10px;border:1px solid #8A6A2D;border-radius:12px;overflow:hidden;background:#1B0F0E">` +

@@ -15,12 +15,14 @@ Add a file named `CNAME` containing just `machinegods.com` (or the subdomain you
 Replace `index.html` with the latest export, then re-apply the signup wiring, hosts photo, and listen links before committing:
 
 ```
-node tools/patch-signup.js index.html "<APPS_SCRIPT_EXEC_URL>" --photo assets/hosts.jpg --links tools/links.json --launched
+node tools/patch-signup.js index.html "<APPS_SCRIPT_EXEC_URL>" --photo assets/hosts.jpg --links tools/links.json --launched --playlist PLQF0_EIyfaCQ
 ```
 
 The same command also adds the "Ask a question / Read the transcripts" buttons and footer links, points the share tags at machinegods.fm, and clears the old "week of October 19" copy. Add `--launched` as well: it swaps the export's "First episode drops October 21" line for "New episodes / Twice a week". The live page has been in launched mode since 2026-10-20, so leaving the flag off brings the old date back.
 
 The script also swaps the export's built-in favicon for the shared icon set (`favicon.ico` at the root, plus `assets/brand/favicon.svg` and `assets/brand/apple-touch-icon.png`), which `/ask` and `/transcripts` use too. To change the favicon, replace those three files.
+
+`--playlist` swaps the "New episodes / Twice a week" block for a YouTube player that embeds the full-episodes playlist. YouTube's playlist embed starts on the playlist's first video, so the newest episode needs to sit at the top of the playlist. On a fresh export, leaving the flag off keeps the "Twice a week" line instead.
 
 The export ships with a stub submit handler (`/* TODO: POST to your list provider */`) and placeholder listen URLs (`TODO-...`), so a fresh export that is pushed without this step will silently drop signups and ship dead podcast links. The script is safe to re-run on an already-patched page.
 
