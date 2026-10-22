@@ -252,8 +252,26 @@ if (rest.includes('--launched')) {
     .replace(/(color:#F9CE6D;text-align:center">)October 21(<\/span>)/, '$1Twice a week$2');
 }
 
+// ---------------------------------------------------------------- favicon
+// Always applied. The export inlines its own favicon as a bundle asset; point it at
+// the shared icon set in assets/brand/ (also used by /ask and /transcripts) instead.
+const ICON_TAGS =
+  '<link rel="icon" href="/favicon.ico" sizes="32x32">' +
+  '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">' +
+  '<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">';
+tpl = tpl.replace(/(<link rel="(?:icon|apple-touch-icon)"[^>]*>)+/, ICON_TAGS);
+if (!tpl.includes(ICON_TAGS)) tpl = tpl.replace('</head>', ICON_TAGS + '</head>');
+
 // ---------------------------------------------------------------- write back
 const reencoded = JSON.stringify(tpl).replace(/<\//g, '<\\u002F');
-const out = src.slice(0, bodyStart) + lead + reencoded + trail + src.slice(e);
+let out = src.slice(0, bodyStart) + lead + reencoded + trail + src.slice(e);
+// The loader shell's own <head> (shown while the bundle unpacks) gets the same tags.
+const shellHeadEnd = out.indexOf('</head>');
+const shellHead = out.slice(0, shellHeadEnd);
+const SHELL_ICON_TAGS = '  ' + ICON_TAGS.replace(/></g, '>\n  <') + '\n';
+if (!shellHead.endsWith('\n' + SHELL_ICON_TAGS)) {
+  out = shellHead.replace(/\n *<link rel="(?:icon|apple-touch-icon)"[^>]*>/g, '').replace(/\n*$/, '\n') +
+        SHELL_ICON_TAGS + out.slice(shellHeadEnd);
+}
 fs.writeFileSync(outFile, out);
 console.log(`patched ${outFile} → endpoint ${endpoint}`);

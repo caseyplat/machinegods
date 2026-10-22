@@ -126,7 +126,9 @@ function page({ title, description, canonical, depth, current, body, image }) {
 <meta property="og:url" content="${canonical}">
 <meta property="og:image" content="${SITE}${image || '/assets/hosts.jpg'}">
 <meta name="twitter:card" content="${image ? 'summary' : 'summary_large_image'}">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="${up}assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="${up}assets/brand/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;600&display=swap">
