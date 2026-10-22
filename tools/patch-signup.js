@@ -4,6 +4,7 @@
  *
  *   node patch-signup.js <path/to/index.html> <ENDPOINT_URL> [--out out.html]
  *                        [--photo assets/hosts.jpg] [--links tools/links.json]
+ *                        [--launched] [--playlist <YouTube playlist ID>]
  *
  * index.html is a Claude Design export: the page template lives as a JSON string
  * inside <script type="__bundler/template">. This script pulls that string out,
@@ -250,6 +251,32 @@ if (rest.includes('--launched')) {
   tpl = tpl
     .replace(/(color:#B7B6C1">)First episode drops(<\/span>)/, '$1New episodes$2')
     .replace(/(color:#F9CE6D;text-align:center">)October 21(<\/span>)/, '$1Twice a week$2');
+}
+
+// ---------------------------------------------------------------- latest-episode player
+// --playlist <YouTube playlist ID> → swaps the "New episodes / Twice a week" block for
+// a YouTube player that embeds the whole playlist. YouTube starts a playlist embed on
+// its FIRST video, so the playlist has to keep the newest episode at the top for this
+// to always show the latest one. Re-running with a different ID just swaps the ID.
+const playlistIdx = rest.indexOf('--playlist');
+if (playlistIdx !== -1) {
+  const playlist = rest[playlistIdx + 1];
+  if (!playlist || !/^[A-Za-z0-9_-]{10,64}$/.test(playlist)) {
+    throw new Error('--playlist needs a YouTube playlist ID, e.g. --playlist PLxxxxxxxxxxxxxxxx (the part after "list=")');
+  }
+  if (playlist.length !== 34) console.warn(`warning: playlist ID "${playlist}" is ${playlist.length} characters; YouTube playlist IDs are usually 34. Check it was copied in full.`);
+  const src = `https://www.youtube.com/embed/videoseries?list=${playlist}&amp;rel=0`;
+  const player =
+    `<div id="mg-latest-episode" style="width:min(720px,calc(100vw - 32px));aspect-ratio:16/9;margin-top:10px;border:1px solid #8A6A2D;border-radius:12px;overflow:hidden;background:#1B0F0E">` +
+    `<iframe src="${src}" title="Machine Gods: latest episode" style="width:100%;height:100%;border:0;display:block" ` +
+    `allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ` +
+    `referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe></div>`;
+  const PLAYER_RE = /<div id="mg-latest-episode"[^>]*>[\s\S]*?<\/iframe><\/div>/;
+  const BIG_LINE_RE = /<span style="font-family:var\(--font-display\);font-stretch:125%;font-weight:900;font-size:clamp\(40px,7vw,64px\);line-height:1;text-transform:uppercase;color:#F9CE6D;text-align:center">(?:Twice a week|October 21)<\/span>/;
+  if (PLAYER_RE.test(tpl)) tpl = tpl.replace(PLAYER_RE, player);
+  else if (BIG_LINE_RE.test(tpl)) tpl = tpl.replace(BIG_LINE_RE, player);
+  else throw new Error('Could not find the "Twice a week" line to replace with the episode player');
+  tpl = tpl.replace(/(color:#B7B6C1">)(?:First episode drops|New episodes)(<\/span>)/, '$1Latest episode$2');
 }
 
 // ---------------------------------------------------------------- favicon
