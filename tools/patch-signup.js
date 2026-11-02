@@ -279,6 +279,11 @@ if (playlistIdx !== -1) {
   tpl = tpl.replace(/(color:#B7B6C1">)(?:First episode drops|New episodes)(<\/span>)/, '$1Latest episode$2');
 }
 
+// ---------------------------------------------------------------- latest transcript link
+// Always applied. "Read the Ep. N transcript" under the player, pointing at the newest
+// transcripts/src entry (see tools/latest-transcript.js, which the scheduled publish runs).
+tpl = require('./latest-transcript.js').applyLatestTranscript(tpl);
+
 // ---------------------------------------------------------------- favicon
 // Always applied. The export inlines its own favicon as a bundle asset; point it at
 // the shared icon set in assets/brand/ (also used by /ask and /transcripts) instead.
