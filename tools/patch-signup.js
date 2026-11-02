@@ -226,7 +226,8 @@ tpl = tpl.replace(FOOTER_RE, (m, open, close) => open + '\n' +
   `<a href="/transcripts/" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Transcripts</a>\n` +
   `<a href="/ask/" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Ask a question</a>\n` +
   `<a href="#newsletter" data-newsletter="" style="${footLink};font-size:11px" style-hover="color:#F6F3F3">Newsletter</a>\n` +
-  `<a href="mailto:hey@machinegods.fm" style="${footLink};font-size:11px;text-transform:none;letter-spacing:.04em" style-hover="color:#F6F3F3">hey@machinegods.fm</a>` +
+  `<a href="mailto:hey@machinegods.fm" style="${footLink};font-size:11px;text-transform:none;letter-spacing:.04em" style-hover="color:#F6F3F3">hey@machinegods.fm</a>\n` +
+  `<span style="color:#B7B6C1;font-size:11px">Sponsorship inquiries: <a href="mailto:sponsor@machinegods.fm" style="${footLink};text-transform:none;letter-spacing:.04em" style-hover="color:#F6F3F3">sponsor@machinegods.fm</a></span>` +
   close);
 
 // ---------------------------------------------------------------- metadata + post-launch copy
