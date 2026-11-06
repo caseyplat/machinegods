@@ -201,7 +201,7 @@ if (!tpl.includes(NEWSLETTER_SCRIPT)) {
 }
 
 // ---------------------------------------------------------------- transcripts + questions links
-// Always applied. Adds a "Read the transcripts / Ask a question" row above the bottom
+// Always applied. Adds an "Ask a question / Read the transcripts / Sponsor the show" row above the bottom
 // divider and the same links in the footer, pointing at the plain-HTML pages in
 // /transcripts and /ask. Idempotent: re-running replaces both blocks.
 const SITE_LINKS_RE = /\n<nav id="mg-site-links"[\s\S]*?<\/nav>/;
@@ -211,7 +211,8 @@ const pillHover = 'background:#F6F3F3;border-color:#F6F3F3;color:#0D0707';
 const siteLinks =
   `\n<nav id="mg-site-links" aria-label="More from the show" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:56px">\n` +
   `<a href="/ask/" style="${pillStyle}" style-hover="${pillHover}">Ask Kevin and Casey a question</a>\n` +
-  `<a href="/transcripts/" style="${pillStyle.replace('color:#0D0707;background:#F9CE6D', 'color:#F9CE6D;background:transparent').replace('border:1px solid #F9CE6D', 'border:1px solid #8A6A2D')}" style-hover="border-color:#F9CE6D;color:#F6F3F3">Read the transcripts</a>\n` +
+  `<a href="/transcripts/" style="${pillStyle}" style-hover="${pillHover}">Read the transcripts</a>\n` +
+  `<a href="mailto:sponsor@machinegods.fm?subject=Sponsoring%20Machine%20Gods" style="${pillStyle}" style-hover="${pillHover}">Sponsor the show</a>\n` +
   `</nav>`;
 tpl = tpl.replace(SITE_LINKS_RE, '');
 const NL_END = '<!--/mg-newsletter-->';
@@ -283,6 +284,13 @@ if (playlistIdx !== -1) {
 // Always applied. "Read the Ep. N transcript" under the player, pointing at the newest
 // transcripts/src entry (see tools/latest-transcript.js, which the scheduled publish runs).
 tpl = require('./latest-transcript.js').applyLatestTranscript(tpl);
+
+// ---------------------------------------------------------------- no intro animation
+// Always applied. The export plays an intro on load (background dissolve, gold bars
+// drawing in, wordmark + photo rising). Kevin wants the page to just appear, so strip
+// every inline `animation:mg…` declaration. Runs after the photo step, which adds one.
+tpl = tpl.replace(/;animation:mg[A-Za-z]+ [^;"]*/g, '');
+if (/animation:mg[A-Za-z]+ /.test(tpl)) throw new Error('An intro animation survived the strip step');
 
 // ---------------------------------------------------------------- favicon
 // Always applied. The export inlines its own favicon as a bundle asset; point it at
