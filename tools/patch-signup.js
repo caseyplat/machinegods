@@ -285,13 +285,6 @@ if (playlistIdx !== -1) {
 // transcripts/src entry (see tools/latest-transcript.js, which the scheduled publish runs).
 tpl = require('./latest-transcript.js').applyLatestTranscript(tpl);
 
-// ---------------------------------------------------------------- no intro animation
-// Always applied. The export plays an intro on load (background dissolve, gold bars
-// drawing in, wordmark + photo rising). Kevin wants the page to just appear, so strip
-// every inline `animation:mg…` declaration. Runs after the photo step, which adds one.
-tpl = tpl.replace(/;animation:mg[A-Za-z]+ [^;"]*/g, '');
-if (/animation:mg[A-Za-z]+ /.test(tpl)) throw new Error('An intro animation survived the strip step');
-
 // ---------------------------------------------------------------- favicon
 // Always applied. The export inlines its own favicon as a bundle asset; point it at
 // the shared icon set in assets/brand/ (also used by /ask and /transcripts) instead.
